@@ -14,20 +14,28 @@
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
 static void moveP1(s16 increment);
+static void manageBall();
 
 bool paused;
 
 Sprite* player1;
 Sprite* ball;
+
 s16 p1x;
 s16 p1y;
 u16 p1Height;
+u16 p1Width;
+
 s16 ballX;
 s16 ballY;
 u16 ballSize;
+s8 ballSpeedX;
+s8 ballSpeedY;
 
 s16 minHeight;
 s16 maxHeight;
+s16 minWidth;
+s16 maxWidth;
 
 int main(u16 hard)
 {
@@ -40,11 +48,14 @@ int main(u16 hard)
 
 	minHeight = 0;
 	maxHeight = screenHeight;
+	minWidth = 0;
+	maxWidth = screenWidth;
 
 	player1 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
 	ball = SPR_addSprite(&sprite_ball, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
 
 	p1Height = sprite_barre.h;
+    p1Width = sprite_barre.w;
 	p1x = 20;
 	p1y = (screenHeight - p1Height) / 2;
 	SPR_setPosition(player1, p1x, p1y);
@@ -60,7 +71,6 @@ int main(u16 hard)
     memcpy(&palette[0], palette_all.data, 64 * 2);
 //            memcpy(&palette[16], palette_sprites.data, 16 * 2);
 
-
     JOY_setEventHandler(joyEvent);
 
     KLog("Launch");
@@ -68,14 +78,65 @@ int main(u16 hard)
     // fade in
     PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
 
+    s8 xSpeedSign = (random() % 3) - 1;
+    while (xSpeedSign == 0) xSpeedSign = (random() % 3) - 1;
+    KLog_S1("x speed sign: ", xSpeedSign);
+
+    ballSpeedX = xSpeedSign * (random() % 4);
+    while (ballSpeedX == 0) ballSpeedX = xSpeedSign * (random() % 4);
+    KLog_S1("x speed: ", ballSpeedX);
+
+    s8 ySpeedSign = (random() % 3) - 1;
+    while (ySpeedSign == 0) ySpeedSign = (random() % 3) - 1;
+    KLog_S1("y speed sign: ", ySpeedSign);
+
+    ballSpeedY = ySpeedSign * (random() % 4);
+    while (ballSpeedY == 0) ballSpeedY = ySpeedSign * (random() % 4);
+    KLog_S1("x speed: ", ballSpeedY);
+
     while(1)
     {
+        manageBall();
         handleInput();
 	    SPR_update();
     	SYS_doVBlankProcess();
     }
 
     return 0;
+}
+
+static void manageBall() {
+    ballX += ballSpeedX;
+    ballY += ballSpeedY;
+    if (ballY <= minHeight) {
+        ballY = minHeight;
+        ballSpeedY = -ballSpeedY;
+    } else if (ballY + ballSize > maxHeight) {
+        ballY = maxHeight - ballSize;
+        ballSpeedY = - ballSpeedY;
+    }
+
+    // ToDo Temp for test
+    if (ballX <= minWidth) {
+        ballX = minWidth;
+        ballSpeedX = -ballSpeedX;
+    } else if (ballX + ballSize > maxWidth) {
+        ballX = maxWidth - ballSize;
+        ballSpeedX = - ballSpeedX;
+    }
+
+    u16 p1R = p1x + p1Width;
+    u16 p1T = p1y;
+    u16 p1B = p1y + p1Height;
+    u16 ballCenterY = ballY + ballSize / 2;
+
+    bool contactOnP1X = ballX <= p1R && ballX - ballSpeedX > p1R && ballSpeedX < 0;
+    bool contactOnP1Y = ballCenterY > p1T && ballCenterY < p1B;
+    if (contactOnP1X && contactOnP1Y) {
+        ballX = p1R;
+        ballSpeedX = - ballSpeedX;
+    }
+	SPR_setPosition(ball, ballX, ballY);
 }
 
 static void handleInput()
@@ -98,16 +159,13 @@ static void handleInput()
 
 static void moveP1(s16 increment) {
 	p1y += 3 * increment;
-	if (p1y < 0) p1y = 0;
+	if (p1y < minHeight) p1y = minHeight;
 	if (p1y + p1Height > maxHeight) p1y = maxHeight - p1Height;
-    KLog_U1("moveP1 - ", p1y);
 	SPR_setPosition(player1, p1x, p1y);
 }
 
 static void joyEvent(u16 joy, u16 changed, u16 state)
 {
-		KLog("joyEvent");
-
     // START button state changed --> pause / unpause
     if (changed & state & BUTTON_START)
     {
