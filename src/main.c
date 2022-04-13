@@ -7,6 +7,7 @@
 
 #include <genesis.h>
 #include "resources.h"
+#include "splash.h"
 
 #define MAP_HEIGHT          1280
 #define MAX_POSY            FIX32(MAP_HEIGHT - 356)
@@ -37,8 +38,54 @@ s16 maxHeight;
 s16 minWidth;
 s16 maxWidth;
 
-int main(u16 hard)
-{
+int main(u16 hard) {
+    bool run = TRUE;
+    s16 wait = 0;
+    u16 palette[64];
+    u16 ind;
+
+    u16 bgBaseTileIndex[2];
+    Map *bga;
+
+    VDP_setScreenWidth320();
+    VDP_setPaletteColors(0, (u16*) palette_black, 64);
+
+    // load background tilesets in VRAM
+    ind = TILE_USERINDEX;
+    bgBaseTileIndex[0] = ind;
+    VDP_loadTileSet(&bga_tileset, ind, DMA);
+    ind += bga_tileset.numTile;
+
+    bga = MAP_create(&bga_map, BG_A, TILE_ATTR_FULL(0, FALSE, FALSE, FALSE, bgBaseTileIndex[0]));
+    s16 camX = 0;
+    MAP_scrollTo(bga, camX, 0);
+
+    memcpy(&palette[0], palette_splash.data, 64 * 2);
+
+    PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
+
+    while(run)
+    {
+        while (camX < 320) {
+            camX += 4;
+            MAP_scrollTo(bga, camX, 0);
+            SYS_doVBlankProcess();
+        }
+        while (wait  < 300) {
+            wait++;
+            SYS_doVBlankProcess();
+        }
+        while (camX < 640) {
+            camX += 4;
+            MAP_scrollTo(bga, camX, 0);
+            SYS_doVBlankProcess();
+        }
+    }
+
+    return 0;
+}
+
+int game() {
     u16 palette[64];
 
 	SPR_init();
