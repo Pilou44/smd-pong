@@ -1,17 +1,29 @@
 #include "splash.h"
 #include "splash_res.h"
 
+u16 palette[64];
+
+void fadeIn(s16 palet, u16 numFrame, bool async);
+
 void splash()
 {
+    Sprite *star;
     s16 wait = 0;
-    u16 palette[64];
     u16 ind;
 
     u16 bgBaseTileIndex[2];
     Map *bgb;
 
+    memcpy(&palette[0], palette_splash.data, 16 * 2);
+    memcpy(&palette[16], palette_splash.data, 16 * 2);
+    memcpy(&palette[32], palette_sprite.data, 16 * 2);
+
+    PAL_setColors(0, (u16 *)palette_black, 64, DMA);
+    PAL_setColors(32, &palette[32], 16, DMA);
+
     VDP_setScreenWidth320();
-    VDP_setPaletteColors(0, (u16 *)palette_black, 64);
+
+    SPR_init();
 
     // load background tilesets in VRAM
     ind = TILE_USERINDEX;
@@ -23,35 +35,49 @@ void splash()
     s16 camX = 0;
     MAP_scrollTo(bgb, camX, 0);
 
-    memcpy(&palette[0], palette_splash.data, 16 * 2);
-    memcpy(&palette[16], palette_splash.data, 16 * 2);
-
     VDP_setTextPalette(1);
     VDP_drawText("Wechant Loup presents", 9, 22);
     VDP_setHorizontalScroll(BG_A, 4);
 
-    PAL_fadeIn(0, (1 * 16) - 1, palette, 20, FALSE);
+    star = SPR_addSprite(&sprite_star, 168, 91, TILE_ATTR(PAL2, TRUE, FALSE, FALSE));
+    SPR_setVisibility(star, HIDDEN);
+    SPR_update();
+
+    fadeIn(0, 20, FALSE);
 
     while (camX < 320)
     {
         camX += 4;
         MAP_scrollTo(bgb, camX, 0);
+        SPR_update();
         SYS_doVBlankProcess();
     }
-    PAL_fadeIn(16, (2 * 16) - 1, palette, 20, FALSE);
+    fadeIn(1, 20, TRUE);
+    SPR_setVisibility(star, VISIBLE);
     while (wait < 180)
     {
         wait++;
+        SPR_update();
         SYS_doVBlankProcess();
     }
-    PAL_fadeOut(16, (2 * 16) - 1, 20, FALSE);
+    SPR_setVisibility(star, HIDDEN);
+    PAL_fadeOut(16, (2 * 16) - 1, 20, TRUE);
     while (camX < 640)
     {
         camX += 4;
         MAP_scrollTo(bgb, camX, 0);
+        SPR_update();
         SYS_doVBlankProcess();
     }
     VDP_clearText(9, 22, 21);
 
+    SPR_releaseSprite(star);
     MEM_free(bgb);
+}
+
+void fadeIn(s16 palet, u16 numFrame, bool async)
+{
+    s16 startIndex = palet * 16;
+    s16 endIndex = ((palet + 1) * 16) - 1;
+    PAL_fadeIn(startIndex, endIndex, &palette[startIndex], numFrame, async);
 }
