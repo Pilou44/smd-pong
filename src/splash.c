@@ -5,7 +5,7 @@ u16 palette[64];
 
 void fadeIn(s16 palet, u16 numFrame, bool async);
 
-void splash()
+void showSplash()
 {
     Sprite *star;
     s16 wait = 0;
@@ -16,10 +16,9 @@ void splash()
 
     memcpy(&palette[0], palette_splash.data, 16 * 2);
     memcpy(&palette[16], palette_splash.data, 16 * 2);
-    memcpy(&palette[32], palette_sprite.data, 16 * 2);
 
     PAL_setColors(0, (u16 *)palette_black, 64, DMA);
-    PAL_setColors(32, &palette[32], 16, DMA);
+    PAL_setColors(32, palette_sprite.data, 16, DMA);
 
     VDP_setScreenWidth320();
 
@@ -69,8 +68,8 @@ void splash()
         SPR_update();
         SYS_doVBlankProcess();
     }
-    VDP_clearText(9, 22, 21);
 
+    VDP_clearText(9, 22, 21);
     SPR_releaseSprite(star);
     MEM_free(bgb);
 }

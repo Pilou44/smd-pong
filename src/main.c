@@ -8,12 +8,13 @@
 #include <genesis.h>
 #include "resources.h"
 #include "splash.h"
+#include "title.h"
 
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
 static void moveP1(s16 increment);
 static void manageBall();
-static void game();
+static void game(u8 players);
 
 bool paused;
 
@@ -38,13 +39,18 @@ s16 maxWidth;
 
 int main(u16 hard)
 {
-    splash();
-    game();
+    showSplash();
+
+    while (TRUE)
+    {
+        u8 players = showTitle();
+        game(players);
+    }
 
     return 0;
 }
 
-void game()
+void game(u8 players)
 {
     u16 palette[64];
 

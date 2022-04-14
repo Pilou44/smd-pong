@@ -3,6 +3,6 @@
 
 #include <genesis.h>
 
-extern void splash();
+extern void showSplash();
 
 #endif // _SPLASH_H_
