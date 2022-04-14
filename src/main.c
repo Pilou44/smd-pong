@@ -9,18 +9,17 @@
 #include "resources.h"
 #include "splash.h"
 
-#define MAP_HEIGHT          1280
-#define MAX_POSY            FIX32(MAP_HEIGHT - 356)
-
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
 static void moveP1(s16 increment);
 static void manageBall();
+static void splash();
+static void game();
 
 bool paused;
 
-Sprite* player1;
-Sprite* ball;
+Sprite *player1;
+Sprite *ball;
 
 s16 p1x;
 s16 p1y;
@@ -38,85 +37,102 @@ s16 maxHeight;
 s16 minWidth;
 s16 maxWidth;
 
-int main(u16 hard) {
-    bool run = TRUE;
+int main(u16 hard)
+{
+    splash();
+    game();
+
+    return 0;
+}
+
+static void splash()
+{
     s16 wait = 0;
     u16 palette[64];
     u16 ind;
 
     u16 bgBaseTileIndex[2];
-    Map *bga;
+    Map *bgb;
 
     VDP_setScreenWidth320();
-    VDP_setPaletteColors(0, (u16*) palette_black, 64);
+    VDP_setPaletteColors(0, (u16 *)palette_black, 64);
 
     // load background tilesets in VRAM
     ind = TILE_USERINDEX;
     bgBaseTileIndex[0] = ind;
-    VDP_loadTileSet(&bga_tileset, ind, DMA);
-    ind += bga_tileset.numTile;
+    VDP_loadTileSet(&bgb_tileset, ind, DMA);
+    ind += bgb_tileset.numTile;
 
-    bga = MAP_create(&bga_map, BG_A, TILE_ATTR_FULL(0, FALSE, FALSE, FALSE, bgBaseTileIndex[0]));
+    bgb = MAP_create(&bgb_map, BG_B, TILE_ATTR_FULL(0, FALSE, FALSE, FALSE, bgBaseTileIndex[0]));
     s16 camX = 0;
-    MAP_scrollTo(bga, camX, 0);
+    MAP_scrollTo(bgb, camX, 0);
 
-    memcpy(&palette[0], palette_splash.data, 64 * 2);
+    memcpy(&palette[0], palette_splash.data, 16 * 2);
+    memcpy(&palette[16], palette_splash.data, 16 * 2);
 
-    PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
+    VDP_setTextPalette(1);
+    VDP_drawText("Wechant Loup presents", 9, 22);
+    VDP_setHorizontalScroll(BG_A, 4);
 
-    while(run)
+    PAL_fadeIn(0, (1 * 16) - 1, palette, 20, FALSE);
+
+    while (camX < 320)
     {
-        while (camX < 320) {
-            camX += 4;
-            MAP_scrollTo(bga, camX, 0);
-            SYS_doVBlankProcess();
-        }
-        while (wait  < 300) {
-            wait++;
-            SYS_doVBlankProcess();
-        }
-        while (camX < 640) {
-            camX += 4;
-            MAP_scrollTo(bga, camX, 0);
-            SYS_doVBlankProcess();
-        }
+        camX += 4;
+        MAP_scrollTo(bgb, camX, 0);
+        SYS_doVBlankProcess();
     }
+    PAL_fadeIn(16, (2 * 16) - 1, palette, 20, FALSE);
+    while (wait < 180)
+    {
+        wait++;
+        SYS_doVBlankProcess();
+    }
+    PAL_fadeOut(16, (2 * 16) - 1, 20, FALSE);
+    while (camX < 640)
+    {
+        camX += 4;
+        MAP_scrollTo(bgb, camX, 0);
+        SYS_doVBlankProcess();
+    }
+    VDP_clearText(9, 22, 21);
 
-    return 0;
+    MEM_free(bgb);
 }
 
-int game() {
+void game()
+{
     u16 palette[64];
 
-	SPR_init();
-	JOY_init();
+    SPR_init();
+    JOY_init();
 
-	paused = FALSE;
+    paused = FALSE;
 
-	minHeight = 0;
-	maxHeight = screenHeight;
-	minWidth = 0;
-	maxWidth = screenWidth;
+    minHeight = 0;
+    maxHeight = screenHeight;
+    minWidth = 0;
+    maxWidth = screenWidth;
 
-	player1 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
-	ball = SPR_addSprite(&sprite_ball, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
+    player1 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
+    ball = SPR_addSprite(&sprite_ball, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
 
-	p1Height = sprite_barre.h;
+    p1Height = sprite_barre.h;
     p1Width = sprite_barre.w;
-	p1x = 20;
-	p1y = (screenHeight - p1Height) / 2;
-	SPR_setPosition(player1, p1x, p1y);
+    p1x = 20;
+    p1y = (screenHeight - p1Height) / 2;
+    SPR_setPosition(player1, p1x, p1y);
 
-	ballSize = sprite_ball.w;
-	ballX = (screenWidth - ballSize) / 2;
-	ballY = (screenHeight - ballSize) / 2;
-	SPR_setPosition(ball, ballX, ballY);
+    ballSize = sprite_ball.w;
+    ballX = (screenWidth - ballSize) / 2;
+    ballY = (screenHeight - ballSize) / 2;
+    SPR_setPosition(ball, ballX, ballY);
 
     SPR_update();
 
     // prepare palettes (BGB image contains the 4 palettes data)
     memcpy(&palette[0], palette_all.data, 64 * 2);
-//            memcpy(&palette[16], palette_sprites.data, 16 * 2);
+    //            memcpy(&palette[16], palette_sprites.data, 16 * 2);
 
     JOY_setEventHandler(joyEvent);
 
@@ -126,50 +142,59 @@ int game() {
     PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
 
     s8 xSpeedSign = (random() % 3) - 1;
-    while (xSpeedSign == 0) xSpeedSign = (random() % 3) - 1;
+    while (xSpeedSign == 0)
+        xSpeedSign = (random() % 3) - 1;
     KLog_S1("x speed sign: ", xSpeedSign);
 
     ballSpeedX = xSpeedSign * (random() % 4);
-    while (ballSpeedX == 0) ballSpeedX = xSpeedSign * (random() % 4);
+    while (ballSpeedX == 0)
+        ballSpeedX = xSpeedSign * (random() % 4);
     KLog_S1("x speed: ", ballSpeedX);
 
     s8 ySpeedSign = (random() % 3) - 1;
-    while (ySpeedSign == 0) ySpeedSign = (random() % 3) - 1;
+    while (ySpeedSign == 0)
+        ySpeedSign = (random() % 3) - 1;
     KLog_S1("y speed sign: ", ySpeedSign);
 
     ballSpeedY = ySpeedSign * (random() % 4);
-    while (ballSpeedY == 0) ballSpeedY = ySpeedSign * (random() % 4);
+    while (ballSpeedY == 0)
+        ballSpeedY = ySpeedSign * (random() % 4);
     KLog_S1("x speed: ", ballSpeedY);
 
-    while(1)
+    while (1)
     {
         manageBall();
         handleInput();
-	    SPR_update();
-    	SYS_doVBlankProcess();
+        SPR_update();
+        SYS_doVBlankProcess();
     }
-
-    return 0;
 }
 
-static void manageBall() {
+static void manageBall()
+{
     ballX += ballSpeedX;
     ballY += ballSpeedY;
-    if (ballY <= minHeight) {
+    if (ballY <= minHeight)
+    {
         ballY = minHeight;
         ballSpeedY = -ballSpeedY;
-    } else if (ballY + ballSize > maxHeight) {
+    }
+    else if (ballY + ballSize > maxHeight)
+    {
         ballY = maxHeight - ballSize;
-        ballSpeedY = - ballSpeedY;
+        ballSpeedY = -ballSpeedY;
     }
 
     // ToDo Temp for test
-    if (ballX <= minWidth) {
+    if (ballX <= minWidth)
+    {
         ballX = minWidth;
         ballSpeedX = -ballSpeedX;
-    } else if (ballX + ballSize > maxWidth) {
+    }
+    else if (ballX + ballSize > maxWidth)
+    {
         ballX = maxWidth - ballSize;
-        ballSpeedX = - ballSpeedX;
+        ballSpeedX = -ballSpeedX;
     }
 
     u16 p1R = p1x + p1Width;
@@ -179,11 +204,12 @@ static void manageBall() {
 
     bool contactOnP1X = ballX <= p1R && ballX - ballSpeedX > p1R && ballSpeedX < 0;
     bool contactOnP1Y = ballCenterY > p1T && ballCenterY < p1B;
-    if (contactOnP1X && contactOnP1Y) {
+    if (contactOnP1X && contactOnP1Y)
+    {
         ballX = p1R;
-        ballSpeedX = - ballSpeedX;
+        ballSpeedX = -ballSpeedX;
     }
-	SPR_setPosition(ball, ballX, ballY);
+    SPR_setPosition(ball, ballX, ballY);
 }
 
 static void handleInput()
@@ -193,22 +219,27 @@ static void handleInput()
     // game is paused ? adjust physics settings
     if (paused)
     {
-       // ToDo
+        // ToDo
     }
     // can affect gameplay
     else
     {
-//        KLog_U1("handleInput - ", value);
-        if (value & BUTTON_UP) moveP1(-1);
-        else if (value & BUTTON_DOWN) moveP1(+1);
+        //        KLog_U1("handleInput - ", value);
+        if (value & BUTTON_UP)
+            moveP1(-1);
+        else if (value & BUTTON_DOWN)
+            moveP1(+1);
     }
 }
 
-static void moveP1(s16 increment) {
-	p1y += 3 * increment;
-	if (p1y < minHeight) p1y = minHeight;
-	if (p1y + p1Height > maxHeight) p1y = maxHeight - p1Height;
-	SPR_setPosition(player1, p1x, p1y);
+static void moveP1(s16 increment)
+{
+    p1y += 3 * increment;
+    if (p1y < minHeight)
+        p1y = minHeight;
+    if (p1y + p1Height > maxHeight)
+        p1y = maxHeight - p1Height;
+    SPR_setPosition(player1, p1x, p1y);
 }
 
 static void joyEvent(u16 joy, u16 changed, u16 state)
