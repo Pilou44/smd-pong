@@ -6,10 +6,10 @@ static void joyEvent(u16 joy, u16 changed, u16 state);
 
 static void moveP1(s16 increment);
 static void moveP2(s16 increment);
-static void movebar(s16 increment, Sprite* bar, u16 height);
+static void movebar(s16 increment, Sprite *bar, u16 height);
 
 static void manageBall();
-static void checkCollision(Sprite* bar, u16 width, u16 height, s16* ballX, s16* ballY);
+static void checkCollision(Sprite *bar, u16 width, u16 height, s16 *ballX, s16 *ballY);
 
 bool paused;
 
@@ -59,7 +59,6 @@ void showLevel(u8 players)
     player1 = SPR_addSprite(&sprite_barre, startX1, startY1, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
     player2 = SPR_addSprite(&sprite_barre, startX2, startY2, TILE_ATTR(PAL1, TRUE, FALSE, TRUE));
 
-
     ballSize = sprite_ball.w;
     s16 ballX = (screenWidth - ballSize) / 2;
     s16 ballY = (screenHeight - ballSize) / 2;
@@ -73,30 +72,24 @@ void showLevel(u8 players)
 
     JOY_setEventHandler(joyEvent);
 
-    KLog("Launch");
-
     // fade in
     PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
 
     s8 xSpeedSign = (random() % 3) - 1;
     while (xSpeedSign == 0)
         xSpeedSign = (random() % 3) - 1;
-    KLog_S1("x speed sign: ", xSpeedSign);
 
     ballSpeedX = xSpeedSign * (random() % 4);
     while (ballSpeedX == 0)
         ballSpeedX = xSpeedSign * (random() % 4);
-    KLog_S1("x speed: ", ballSpeedX);
 
     s8 ySpeedSign = (random() % 3) - 1;
     while (ySpeedSign == 0)
         ySpeedSign = (random() % 3) - 1;
-    KLog_S1("y speed sign: ", ySpeedSign);
 
     ballSpeedY = ySpeedSign * (random() % 4);
     while (ballSpeedY == 0)
         ballSpeedY = ySpeedSign * (random() % 4);
-    KLog_S1("x speed: ", ballSpeedY);
 
     while (1)
     {
@@ -106,8 +99,6 @@ void showLevel(u8 players)
         SYS_doVBlankProcess();
     }
 }
-
-bool log = TRUE;
 
 static void manageBall()
 {
@@ -138,15 +129,13 @@ static void manageBall()
         ballSpeedX = -ballSpeedX;
     }
 
-    if (log) KLog("Test collision with P1");
     checkCollision(player1, p1Width, p1Height, &ballX, &ballY);
-    if (log) KLog("Test collision with P2");
     checkCollision(player2, p2Width, p2Height, &ballX, &ballY);
 
     SPR_setPosition(ball, ballX, ballY);
 }
 
-static void checkCollision(Sprite* bar, u16 width, u16 height, s16* ballX, s16* ballY)
+static void checkCollision(Sprite *bar, u16 width, u16 height, s16 *ballX, s16 *ballY)
 {
     s16 barLeft = SPR_getPositionX(bar);
     s16 barRight = barLeft + width;
@@ -159,19 +148,43 @@ static void checkCollision(Sprite* bar, u16 width, u16 height, s16* ballX, s16* 
     s16 ballBottom = ballTop + ballSize;
 
     bool isGoodY = ballBottom >= barTop && ballTop <= barBottom;
-
-    bool contactOnRight = ballLeft <= barRight && ballLeft - ballSpeedX > barRight && ballSpeedX < 0;
-    if (contactOnRight && isGoodY)
+    if (isGoodY)
     {
-        *ballX = barRight;
-        ballSpeedX = -ballSpeedX;
+        bool contactOnRight = ballLeft <= barRight && ballLeft - ballSpeedX > barRight && ballSpeedX < 0;
+        if (contactOnRight)
+        {
+            *ballX = barRight;
+            ballSpeedX = -ballSpeedX;
+        }
+        else
+        {
+            bool contactOnLeft = ballRight >= barLeft && ballRight - ballSpeedX < barLeft && ballSpeedX > 0;
+            if (contactOnLeft)
+            {
+                *ballX = barLeft - ballSize;
+                ballSpeedX = -ballSpeedX;
+            }
+        }
     }
 
-    bool contactOnLeft = ballRight >= barLeft && ballRight - ballSpeedX < barLeft && ballSpeedX > 0;
-    if (contactOnLeft && isGoodY)
+    bool isGoodX = ballRight >= barLeft && ballLeft <= barRight;
+    if (isGoodX)
     {
-        *ballX = barLeft - ballSize;
-        ballSpeedX = -ballSpeedX;
+        bool contactOnBottom = ballTop <= barBottom && ballTop - ballSpeedY > barBottom && ballSpeedY < 0;
+        if (contactOnBottom)
+        {
+            *ballY = barBottom;
+            ballSpeedY = -ballSpeedY;
+        }
+        else
+        {
+            bool contactOnTop = ballBottom >= barTop && ballBottom - ballSpeedY < barTop && ballSpeedY > 0;
+            if (contactOnTop)
+            {
+                *ballY = barTop - ballSize;
+                ballSpeedY = -ballSpeedY;
+            }
+        }
     }
 }
 
@@ -205,7 +218,7 @@ static void moveP2(s16 increment)
     movebar(increment, player2, p2Height);
 }
 
-static void movebar(s16 increment, Sprite* bar, u16 height)
+static void movebar(s16 increment, Sprite *bar, u16 height)
 {
     s16 x = SPR_getPositionX(bar);
     s16 y = SPR_getPositionY(bar) + 3 * increment;
