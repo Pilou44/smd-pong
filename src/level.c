@@ -93,8 +93,11 @@ void showLevel(u8 players)
 
     while (1)
     {
-        manageBall();
-        handleInput();
+        if (!paused)
+        {
+            manageBall();
+            handleInput();
+        }
         SPR_update();
         SYS_doVBlankProcess();
     }
@@ -192,20 +195,10 @@ static void handleInput()
 {
     u16 value = JOY_readJoypad(JOY_1);
 
-    // game is paused ? adjust physics settings
-    if (paused)
-    {
-        // ToDo
-    }
-    // can affect gameplay
-    else
-    {
-        //        KLog_U1("handleInput - ", value);
-        if (value & BUTTON_UP)
-            moveP1(-1);
-        else if (value & BUTTON_DOWN)
-            moveP1(+1);
-    }
+    if (value & BUTTON_UP)
+        moveP1(-1);
+    else if (value & BUTTON_DOWN)
+        moveP1(+1);
 }
 
 static void moveP1(s16 increment)
@@ -235,5 +228,17 @@ static void joyEvent(u16 joy, u16 changed, u16 state)
     if (changed & state & BUTTON_START)
     {
         paused = !paused;
+        char *text = "PAUSE";
+        u16 textLength = 5;
+        u16 y = screenHeight / 8 / 2 - 1;
+        u16 x = ((screenWidth - textLength) / 8 - textLength) / 2;
+        if (paused)
+        {
+            VDP_drawText("PAUSE", x, y);
+        }
+        else
+        {
+            VDP_clearText(x, y, textLength);
+        }
     }
 }
