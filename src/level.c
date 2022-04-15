@@ -55,7 +55,7 @@ void showLevel(u8 players)
     p2Width = sprite_barre.w;
 
     s16 startX1 = 20;
-    s16 startX2 = screenWidth - startX1;
+    s16 startX2 = screenWidth - startX1 - p2Width;
     s16 startY1 = (screenHeight - p1Height) / 2;
     s16 startY2 = (screenHeight - p2Height) / 2;
     player1 = SPR_addSprite(&sprite_barre, startX1, startY1, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
