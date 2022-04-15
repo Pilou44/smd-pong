@@ -3,8 +3,13 @@
 
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
+
 static void moveP1(s16 increment);
+static void moveP2(s16 increment);
+static void movebar(s16 increment, Sprite* bar, u16 height);
+
 static void manageBall();
+static void checkCollision(Sprite* bar, u16 width, u16 height, s16* ballX, s16* ballY);
 
 bool paused;
 
@@ -12,18 +17,12 @@ Sprite *player1;
 Sprite *player2;
 Sprite *ball;
 
-s16 p1x;
-s16 p1y;
 u16 p1Height;
 u16 p1Width;
 
-s16 p2x;
-s16 p2y;
 u16 p2Height;
 u16 p2Width;
 
-s16 ballX;
-s16 ballY;
 u16 ballSize;
 s8 ballSpeedX;
 s8 ballSpeedY;
@@ -37,6 +36,7 @@ void showLevel(u8 players)
 {
     u16 palette[64];
 
+    VDP_setScreenWidth320();
     SPR_init();
     JOY_init();
 
@@ -47,25 +47,23 @@ void showLevel(u8 players)
     minWidth = 0;
     maxWidth = screenWidth;
 
-    player1 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
-    player2 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL1, TRUE, FALSE, TRUE));
-    ball = SPR_addSprite(&sprite_ball, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
-
     p1Height = sprite_barre.h;
     p1Width = sprite_barre.w;
     p2Height = sprite_barre.h;
     p2Width = sprite_barre.w;
-    p1x = 20;
-    p1y = (screenHeight - p1Height) / 2;
-    SPR_setPosition(player1, p1x, p1y);
-    p2x = screenWidth - 20;
-    p2y = (screenHeight - p2Height) / 2;
-    SPR_setPosition(player2, p2x, p2y);
+
+    s16 startX1 = 20;
+    s16 startX2 = screenWidth - startX1;
+    s16 startY1 = (screenHeight - p1Height) / 2;
+    s16 startY2 = (screenHeight - p2Height) / 2;
+    player1 = SPR_addSprite(&sprite_barre, startX1, startY1, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
+    player2 = SPR_addSprite(&sprite_barre, startX2, startY2, TILE_ATTR(PAL1, TRUE, FALSE, TRUE));
+
 
     ballSize = sprite_ball.w;
-    ballX = (screenWidth - ballSize) / 2;
-    ballY = (screenHeight - ballSize) / 2;
-    SPR_setPosition(ball, ballX, ballY);
+    s16 ballX = (screenWidth - ballSize) / 2;
+    s16 ballY = (screenHeight - ballSize) / 2;
+    ball = SPR_addSprite(&sprite_ball, ballX, ballY, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
 
     SPR_update();
 
@@ -109,8 +107,12 @@ void showLevel(u8 players)
     }
 }
 
+bool log = TRUE;
+
 static void manageBall()
 {
+    s16 ballX = SPR_getPositionX(ball);
+    s16 ballY = SPR_getPositionY(ball);
     ballX += ballSpeedX;
     ballY += ballSpeedY;
     if (ballY <= minHeight)
@@ -136,19 +138,41 @@ static void manageBall()
         ballSpeedX = -ballSpeedX;
     }
 
-    u16 p1R = p1x + p1Width;
-    u16 p1T = p1y;
-    u16 p1B = p1y + p1Height;
-    u16 ballCenterY = ballY + ballSize / 2;
+    if (log) KLog("Test collision with P1");
+    checkCollision(player1, p1Width, p1Height, &ballX, &ballY);
+    if (log) KLog("Test collision with P2");
+    checkCollision(player2, p2Width, p2Height, &ballX, &ballY);
 
-    bool contactOnP1X = ballX <= p1R && ballX - ballSpeedX > p1R && ballSpeedX < 0;
-    bool contactOnP1Y = ballCenterY > p1T && ballCenterY < p1B;
-    if (contactOnP1X && contactOnP1Y)
+    SPR_setPosition(ball, ballX, ballY);
+}
+
+static void checkCollision(Sprite* bar, u16 width, u16 height, s16* ballX, s16* ballY)
+{
+    s16 barLeft = SPR_getPositionX(bar);
+    s16 barRight = barLeft + width;
+    s16 barTop = SPR_getPositionY(bar);
+    s16 barBottom = barTop + height;
+
+    s16 ballLeft = SPR_getPositionX(ball);
+    s16 ballRight = ballLeft + ballSize;
+    s16 ballTop = SPR_getPositionY(ball);
+    s16 ballBottom = ballTop + ballSize;
+
+    bool isGoodY = ballBottom >= barTop && ballTop <= barBottom;
+
+    bool contactOnRight = ballLeft <= barRight && ballLeft - ballSpeedX > barRight && ballSpeedX < 0;
+    if (contactOnRight && isGoodY)
     {
-        ballX = p1R;
+        *ballX = barRight;
         ballSpeedX = -ballSpeedX;
     }
-    SPR_setPosition(ball, ballX, ballY);
+
+    bool contactOnLeft = ballRight >= barLeft && ballRight - ballSpeedX < barLeft && ballSpeedX > 0;
+    if (contactOnLeft && isGoodY)
+    {
+        *ballX = barLeft - ballSize;
+        ballSpeedX = -ballSpeedX;
+    }
 }
 
 static void handleInput()
@@ -173,12 +197,23 @@ static void handleInput()
 
 static void moveP1(s16 increment)
 {
-    p1y += 3 * increment;
-    if (p1y < minHeight)
-        p1y = minHeight;
-    if (p1y + p1Height > maxHeight)
-        p1y = maxHeight - p1Height;
-    SPR_setPosition(player1, p1x, p1y);
+    movebar(increment, player1, p1Height);
+}
+
+static void moveP2(s16 increment)
+{
+    movebar(increment, player2, p2Height);
+}
+
+static void movebar(s16 increment, Sprite* bar, u16 height)
+{
+    s16 x = SPR_getPositionX(bar);
+    s16 y = SPR_getPositionY(bar) + 3 * increment;
+    if (y < minHeight)
+        y = minHeight;
+    if (y + height > maxHeight)
+        y = maxHeight - height;
+    SPR_setPosition(bar, x, y);
 }
 
 static void joyEvent(u16 joy, u16 changed, u16 state)
