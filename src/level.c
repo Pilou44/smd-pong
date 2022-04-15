@@ -13,6 +13,8 @@ static void checkCollision(Sprite *bar, u16 width, u16 height, s16 *ballX, s16 *
 
 bool paused;
 
+u8 humanPlayers;
+
 Sprite *player1;
 Sprite *player2;
 Sprite *ball;
@@ -34,13 +36,13 @@ s16 maxWidth;
 
 void showLevel(u8 players)
 {
-    u16 palette[64];
-
     VDP_setScreenWidth320();
     SPR_init();
     JOY_init();
 
+    humanPlayers = players;
     paused = FALSE;
+    u16 palette[64];
 
     minHeight = 0;
     maxHeight = screenHeight;
@@ -194,11 +196,19 @@ static void checkCollision(Sprite *bar, u16 width, u16 height, s16 *ballX, s16 *
 static void handleInput()
 {
     u16 value = JOY_readJoypad(JOY_1);
-
     if (value & BUTTON_UP)
         moveP1(-1);
     else if (value & BUTTON_DOWN)
         moveP1(+1);
+
+    if (humanPlayers == 2)
+    {
+        u16 value = JOY_readJoypad(JOY_2);
+        if (value & BUTTON_UP)
+            moveP2(-1);
+        else if (value & BUTTON_DOWN)
+            moveP2(+1);
+    }
 }
 
 static void moveP1(s16 increment)
@@ -229,12 +239,12 @@ static void joyEvent(u16 joy, u16 changed, u16 state)
     {
         paused = !paused;
         char *text = "PAUSE";
-        u16 textLength = 5;
+        u16 textLength = strlen(text);
         u16 y = screenHeight / 8 / 2 - 1;
         u16 x = ((screenWidth - textLength) / 8 - textLength) / 2;
         if (paused)
         {
-            VDP_drawText("PAUSE", x, y);
+            VDP_drawText(text, x, y);
         }
         else
         {
