@@ -19,12 +19,18 @@ static void game(u8 players);
 bool paused;
 
 Sprite *player1;
+Sprite *player2;
 Sprite *ball;
 
 s16 p1x;
 s16 p1y;
 u16 p1Height;
 u16 p1Width;
+
+s16 p2x;
+s16 p2y;
+u16 p2Height;
+u16 p2Width;
 
 s16 ballX;
 s16 ballY;
@@ -65,13 +71,19 @@ void game(u8 players)
     maxWidth = screenWidth;
 
     player1 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
+    player2 = SPR_addSprite(&sprite_barre, 0, 0, TILE_ATTR(PAL1, TRUE, FALSE, TRUE));
     ball = SPR_addSprite(&sprite_ball, 0, 0, TILE_ATTR(PAL0, TRUE, FALSE, FALSE));
 
     p1Height = sprite_barre.h;
     p1Width = sprite_barre.w;
+    p2Height = sprite_barre.h;
+    p2Width = sprite_barre.w;
     p1x = 20;
     p1y = (screenHeight - p1Height) / 2;
     SPR_setPosition(player1, p1x, p1y);
+    p2x = screenWidth - 20;
+    p2y = (screenHeight - p2Height) / 2;
+    SPR_setPosition(player2, p2x, p2y);
 
     ballSize = sprite_ball.w;
     ballX = (screenWidth - ballSize) / 2;
