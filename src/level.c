@@ -1,12 +1,15 @@
 #include "level.h"
 #include "level_res.h"
 
+#define BAR_INCREMENT 3
+
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
 
 static void moveP1(s16 increment);
 static void moveP2(s16 increment);
-static void movebar(s16 increment, Sprite *bar, u16 height);
+static void moveWithUi();
+static void moveBar(s16 increment, Sprite *bar, u16 height);
 
 static void manageBall();
 static void checkCollision(Sprite *bar, u16 width, u16 height, s16 *ballX, s16 *ballY);
@@ -209,22 +212,54 @@ static void handleInput()
         else if (value & BUTTON_DOWN)
             moveP2(+1);
     }
+    else
+    {
+        moveWithUi();
+    }
+}
+
+static void moveWithUi()
+{
+    s16 p2Y = SPR_getPositionY(player2) + p2Height / 2;
+    if (ballSpeedX < 0) {
+        u16 centerY = screenHeight / 2;
+        if (p2Y < centerY - BAR_INCREMENT)
+        {
+            moveP2(+1);
+        }
+        else if (p2Y > centerY + BAR_INCREMENT)
+        {
+            moveP2(-1);
+        }
+    }
+    else
+    {
+        s16 ballY = SPR_getPositionY(ball) + ballSize / 2;
+        if (p2Y < ballY - BAR_INCREMENT)
+        {
+            moveP2(+1);
+        }
+        else if (p2Y > ballY + BAR_INCREMENT)
+        {
+            moveP2(-1);
+        }
+    }
 }
 
 static void moveP1(s16 increment)
 {
-    movebar(increment, player1, p1Height);
+    moveBar(increment, player1, p1Height);
 }
 
 static void moveP2(s16 increment)
 {
-    movebar(increment, player2, p2Height);
+    moveBar(increment, player2, p2Height);
 }
 
-static void movebar(s16 increment, Sprite *bar, u16 height)
+static void moveBar(s16 increment, Sprite *bar, u16 height)
 {
     s16 x = SPR_getPositionX(bar);
-    s16 y = SPR_getPositionY(bar) + 3 * increment;
+    s16 y = SPR_getPositionY(bar) + BAR_INCREMENT * increment;
     if (y < minHeight)
         y = minHeight;
     if (y + height > maxHeight)
