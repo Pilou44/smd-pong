@@ -2,6 +2,7 @@
 #include "level_res.h"
 
 #define BAR_INCREMENT 3
+#define BALL_SPEED 5
 
 static void handleInput();
 static void joyEvent(u16 joy, u16 changed, u16 state);
@@ -80,21 +81,34 @@ void showLevel(u8 players)
     // fade in
     PAL_fadeIn(0, (4 * 16) - 1, palette, 20, FALSE);
 
-    s8 xSpeedSign = (random() % 3) - 1;
-    while (xSpeedSign == 0)
-        xSpeedSign = (random() % 3) - 1;
+    // Angle between 30 and 60 degrees, ie between 85 and 170
+    s8 ballAngle = (random() % 86) + 85;
+    ballSpeedX = fix16ToInt(fix16Mul(intToFix16(BALL_SPEED), cosFix16(ballAngle)));
+    ballSpeedY = fix16ToInt(fix16Mul(intToFix16(BALL_SPEED), sinFix16(ballAngle)));
+    KLog_f1("cos angle = ", cosFix16(ballAngle));
+    KLog_f1("sin angle = ", sinFix16(ballAngle));
+    KLog_f1("ball inc = ", intToFix16(BALL_SPEED));
+    KLog_f1("Ball speed x fix16 = ", fix16Mul(intToFix16(BALL_SPEED), cosFix16(ballAngle)));
+    KLog_S1("Ball speed y fix16 = ", fix16Mul(intToFix16(BALL_SPEED), sinFix16(ballAngle)));
 
-    ballSpeedX = xSpeedSign * (random() % 4);
-    while (ballSpeedX == 0)
-        ballSpeedX = xSpeedSign * (random() % 4);
+    KLog_S1("Ball speed x = ", ballSpeedX);
+    KLog_S1("Ball speed y = ", ballSpeedY);
 
-    s8 ySpeedSign = (random() % 3) - 1;
-    while (ySpeedSign == 0)
-        ySpeedSign = (random() % 3) - 1;
+    // s8 xSpeedSign = (random() % 3) - 1;
+    // while (xSpeedSign == 0)
+    //     xSpeedSign = (random() % 3) - 1;
 
-    ballSpeedY = ySpeedSign * (random() % 4);
-    while (ballSpeedY == 0)
-        ballSpeedY = ySpeedSign * (random() % 4);
+    // ballSpeedX = xSpeedSign * (random() % 4);
+    // while (ballSpeedX == 0)
+    //     ballSpeedX = xSpeedSign * (random() % 4);
+
+    // s8 ySpeedSign = (random() % 3) - 1;
+    // while (ySpeedSign == 0)
+    //     ySpeedSign = (random() % 3) - 1;
+
+    // ballSpeedY = ySpeedSign * (random() % 4);
+    // while (ballSpeedY == 0)
+    //     ballSpeedY = ySpeedSign * (random() % 4);
 
     while (1)
     {
