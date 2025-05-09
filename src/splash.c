@@ -25,7 +25,7 @@ void showSplash()
     SPR_init();
 
     // load background tilesets in VRAM
-    ind = TILE_USERINDEX;
+    ind = TILE_USER_INDEX;
     bgBaseTileIndex[0] = ind;
     VDP_loadTileSet(&bgb_tileset, ind, DMA);
     ind += bgb_tileset.numTile;

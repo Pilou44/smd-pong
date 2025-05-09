@@ -83,13 +83,13 @@ void showLevel(u8 players)
 
     // Angle between 30 and 60 degrees, ie between 85 and 170
     s8 ballAngle = (random() % 86) + 85;
-    ballSpeedX = fix16ToInt(fix16Mul(intToFix16(BALL_SPEED), cosFix16(ballAngle)));
-    ballSpeedY = fix16ToInt(fix16Mul(intToFix16(BALL_SPEED), sinFix16(ballAngle)));
+    ballSpeedX = F16_toInt(F16_mul(FIX16(BALL_SPEED), cosFix16(ballAngle)));
+    ballSpeedY = F16_toInt(F16_mul(FIX16(BALL_SPEED), sinFix16(ballAngle)));
     KLog_f1("cos angle = ", cosFix16(ballAngle));
     KLog_f1("sin angle = ", sinFix16(ballAngle));
-    KLog_f1("ball inc = ", intToFix16(BALL_SPEED));
-    KLog_f1("Ball speed x fix16 = ", fix16Mul(intToFix16(BALL_SPEED), cosFix16(ballAngle)));
-    KLog_S1("Ball speed y fix16 = ", fix16Mul(intToFix16(BALL_SPEED), sinFix16(ballAngle)));
+    KLog_f1("ball inc = ", FIX16(BALL_SPEED));
+    KLog_f1("Ball speed x fix16 = ", F16_mul(F16_toInt(BALL_SPEED), cosFix16(ballAngle)));
+    KLog_S1("Ball speed y fix16 = ", F16_mul(F16_toInt(BALL_SPEED), sinFix16(ballAngle)));
 
     KLog_S1("Ball speed x = ", ballSpeedX);
     KLog_S1("Ball speed y = ", ballSpeedY);
